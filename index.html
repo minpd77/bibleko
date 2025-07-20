@@ -1,0 +1,87 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>성경 검색 (개역개정 · 개역한글)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 20px; background: #f9f9f9; }
+    h1 { color: #1a237e; }
+    #search-box { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    #searchInput { flex: 1; padding: 10px; font-size: 16px; }
+    #result { background: white; padding: 20px; border-radius: 10px; }
+    .version-title { font-weight: bold; font-size: 18px; margin-top: 20px; color: #333; }
+    .verse-block { margin: 8px 0; }
+    .highlight { color: red; font-weight: bold; }
+    .ref-link { color: #0d47a1; cursor: pointer; text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <h1>성경 검색 (개역개정 · 개역한글)</h1>
+  <div id="search-box">
+    <input type="text" id="searchInput" placeholder="예: 창1:1 또는 여호와" />
+    <button onclick="search()">검색</button>
+  </div>
+  <div id="result"></div>
+
+  <script>
+    const versions = ["개역개정", "개역한글"];
+    const books = ["창세기","출애굽기","레위기","민수기","신명기","여호수아","사사기","룻기","사무엘상","사무엘하",
+    "열왕기상","열왕기하","역대상","역대하","에스라","느헤미야","에스더","욥기","시편","잠언","전도서","아가",
+    "이사야","예레미야","예레미야애가","에스겔","다니엘","호세아","요엘","아모스","오바댜","요나","미가","나훔",
+    "하박국","스바냐","학개","스가랴","말라기","마태복음","마가복음","누가복음","요한복음","사도행전","로마서",
+    "고린도전서","고린도후서","갈라디아서","에베소서","빌립보서","골로새서","데살로니가전서","데살로니가후서",
+    "디모데전서","디모데후서","디도서","빌레몬서","히브리서","야고보서","베드로전서","베드로후서","요한1서",
+    "요한2서","요한3서","유다서","요한계시록"];
+
+    const bookMap = {};
+    books.forEach(name => bookMap[name.replace(/서$/, "").substring(0,2)] = name);
+
+    async function loadBible(version, book) {
+      const file = `${version}/${book}_${version}.json`;
+      const res = await fetch(file);
+      return res.json();
+    }
+
+    async function search() {
+      const input = document.getElementById("searchInput").value.trim();
+      const resultBox = document.getElementById("result");
+      resultBox.innerHTML = "";
+
+      let match = input.match(/^([가-힣]{1,5})\s?(\d+):(\d+)$/);
+      if (match) {
+        const [_, bookShort, ch, vs] = match;
+        const book = bookMap[bookShort] || books.find(b => b.startsWith(bookShort)) || bookShort;
+        for (const version of versions) {
+          const data = await loadBible(version, book);
+          const text = (data[ch] && data[ch][vs]) || "구절 없음";
+          resultBox.innerHTML += `<div class="version-title">${version}</div>
+            <div class="verse-block"><strong>${book} ${ch}:${vs}</strong> ${text}</div>`;
+        }
+        return;
+      }
+
+      for (const version of versions) {
+        let versionResults = [];
+        for (const book of books) {
+          try {
+            const data = await loadBible(version, book);
+            for (const ch in data) {
+              for (const vs in data[ch]) {
+                const verse = data[ch][vs];
+                if (verse.includes(input)) {
+                  const ref = `${book} ${ch}:${vs}`;
+                  const highlighted = verse.replaceAll(input, `<span class="highlight">${input}</span>`);
+                  versionResults.push(`<div class="verse-block"><span class="ref-link">${ref}</span>: ${highlighted}</div>`);
+                }
+              }
+            }
+          } catch {}
+        }
+        resultBox.innerHTML += `<div class="version-title">${version}</div>` + versionResults.join("");
+      }
+    }
+  </script>
+</body>
+</html>
