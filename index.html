@@ -13,7 +13,6 @@
     .bible-column { width: 48%; background: white; padding: 10px; border-radius: 10px; box-shadow: 0 0 5px #ccc; overflow-y: auto; max-height: 70vh; }
     .chapter-title { font-weight: bold; font-size: 1.2em; margin-top: 1em; }
     .verse { margin: 4px 0; }
-    .highlight { background: yellow; color: red; }
   </style>
 </head>
 <body>
@@ -29,73 +28,36 @@
 <div class="bible-container" id="bibleContainer"></div>
 
 <script>
-let bibleData = { gae: {}, han: {} };
-let structure = {};
-let currentBook = "", currentChapter = 1;
 const abbrMap = {
   "창세기":"창", "출애굽기":"출", "레위기":"레", "민수기":"민", "신명기":"신",
   "여호수아":"수", "사사기":"삿", "룻기":"룻", "사무엘상":"삼상", "사무엘하":"삼하",
-  "열왕기상":"왕상", "열왕기하":"왕하", "역대상":"대상", "역대하":"대하", "에스라":"스",
+  "열왕기상":"왕상", "열왕기하":"왕하", "역대상":"대상", "역대하":"대하", "에스라":"스라",
   "느헤미야":"느", "에스더":"에", "욥기":"욥", "시편":"시", "잠언":"잠", "전도서":"전",
-  "아가":"아", "이사야":"사", "예레미야":"렘", "예레미야애가":"애", "에스겔":"겔",
-  "다니엘":"단", "호세아":"호", "요엘":"욜", "아모스":"암", "오바댜":"옵", "요나":"욘",
-  "미가":"미", "나훔":"나", "하박국":"합", "스바냐":"습", "학개":"학", "스가랴":"슥",
-  "말라기":"말", "마태복음":"마", "마가복음":"막", "누가복음":"눅", "요한복음":"요",
-  "사도행전":"행", "로마서":"롬", "고린도전서":"고전", "고린도후서":"고후", "갈라디아서":"갈",
-  "에베소서":"엡", "빌립보서":"빌", "골로새서":"골", "데살로니가전서":"살전",
-  "데살로니가후서":"살후", "디모데전서":"딤전", "디모데후서":"딤후", "디도서":"딛",
-  "빌레몬서":"몬", "히브리서":"히", "야고보서":"약", "베드로전서":"벧전",
-  "베드로후서":"벧후", "요한1서":"요일", "요한2서":"요이", "요한3서":"요삼",
-  "유다서":"유", "요한계시록":"계"
+  "아가":"아", "이사야":"사", "예레미야":"렘", "예레미야애가":"애", "에스겔":"겔", "다니엘":"단",
+  "호세아":"호", "요엘":"욜", "아모스":"암", "오바댜":"옵", "요나":"욘", "미가":"미",
+  "나훔":"나", "하박국":"합", "스바냐":"습", "학개":"학", "스가랴":"슥", "말라기":"말",
+  "마태복음":"마", "마가복음":"막", "누가복음":"눅", "요한복음":"요", "사도행전":"행",
+  "로마서":"롬", "고린도전서":"고전", "고린도후서":"고후", "갈라디아서":"갈", "에베소서":"엡",
+  "빌립보서":"빌", "골로새서":"골", "데살로니가전서":"살전", "데살로니가후서":"살후",
+  "디모데전서":"딤전", "디모데후서":"딤후", "디도서":"딛", "빌레몬서":"몬", "히브리서":"히",
+  "야고보서":"약", "베드로전서":"벧전", "베드로후서":"벧후", "요한1서":"요일",
+  "요한2서":"요이", "요한3서":"요삼", "유다서":"유", "요한계시록":"계"
 };
 
-async function loadBibleMeta() {
-  structure = await (await fetch('./meta/성경장절구조.json')).json();
-  const bookSelect = document.getElementById("bookSelect");
-  for (const book in structure) {
-    const opt = document.createElement("option");
-    opt.value = book;
-    const abbr = book.match(/\((.*?)\)/)?.[1] || abbrMap[book] || "";
-    opt.textContent = `${book}`;
-    bookSelect.appendChild(opt);
-  }
-  bookSelect.addEventListener("change", () => {
-    currentBook = bookSelect.value;
-    loadChapters(currentBook);
-  });
-  bookSelect.selectedIndex = 0;
-  currentBook = bookSelect.value;
-  loadChapters(currentBook);
-}
-
-function loadChapters(book) {
-  const chapterSelect = document.getElementById("chapterSelect");
-  chapterSelect.innerHTML = "";
-  const max = structure[book];
-  for (let i = 1; i <= max; i++) {
-    const opt = document.createElement("option");
-    opt.value = i;
-    opt.textContent = `${i}장`;
-    chapterSelect.appendChild(opt);
-  }
-  chapterSelect.addEventListener("change", () => {
-    currentChapter = +chapterSelect.value;
-    renderBible(currentBook, currentChapter);
-  });
-  chapterSelect.selectedIndex = 0;
-  currentChapter = 1;
-  renderBible(book, 1);
-}
+let structure = {}, bibleData = { gae: {}, han: {} };
+let currentBook = "", currentChapter = 1;
 
 async function loadBibleMeta() {
   structure = await (await fetch('./meta/성경장절구조.json')).json();
   const bookSelect = document.getElementById("bookSelect");
-  for (const book in structure) {
-    const opt = document.createElement("option");
-    opt.value = book;
-    const abbr = abbrMap[book] || "";
-    opt.textContent = `${book} (${abbr})`;
-    bookSelect.appendChild(opt);
+  bookSelect.innerHTML = "";
+  for (const book of Object.keys(abbrMap)) {
+    if (structure[book]) {
+      const opt = document.createElement("option");
+      opt.value = book;
+      opt.textContent = `${book} (${abbrMap[book]})`;
+      bookSelect.appendChild(opt);
+    }
   }
   bookSelect.addEventListener("change", async () => {
     currentBook = bookSelect.value;
@@ -125,25 +87,60 @@ async function loadChapters(book) {
   await renderBible(book, 1);
 }
 
+async function loadBible(book) {
+  try {
+    bibleData.gae = await (await fetch(`./개역개정/${book}_개역개정.json`)).json();
+  } catch {}
+  try {
+    bibleData.han = await (await fetch(`./개역한글/${book}_개역한글.json`)).json();
+  } catch {}
+}
+
+async function renderBible(book, chapter) {
+  await loadBible(book);
+  const showGae = document.getElementById("version1").checked;
+  const showHan = document.getElementById("version2").checked;
+  const container = document.getElementById("bibleContainer");
+  container.innerHTML = "";
+  if (showGae) container.appendChild(makeBibleColumn("개역개정", bibleData.gae, chapter));
+  if (showHan) container.appendChild(makeBibleColumn("개역한글", bibleData.han, chapter));
+}
+
+function makeBibleColumn(title, data, chapter) {
+  const col = document.createElement("div");
+  col.className = "bible-column";
+  const header = document.createElement("div");
+  header.className = "chapter-title";
+  header.textContent = `${title} - ${currentBook} ${chapter}장`;
+  col.appendChild(header);
+  const verses = data[chapter];
+  if (!verses) return col;
+  for (const verseNum in verses) {
+    const div = document.createElement("div");
+    div.className = "verse";
+    div.innerHTML = `<b>${verseNum}</b> ${verses[verseNum]}`;
+    col.appendChild(div);
+  }
+  return col;
+}
+
 async function searchBible() {
   const keyword = document.getElementById("searchInput").value.trim();
-  const regex = /([\uAC00-\uD7AF]+)\s*(\d+)\s*[:장]?\s*(\d+)?/;
+  const regex = /([\uAC00-\uD7AF]+)\s*(\d+)[장:]?\s*(\d+)?/;
   const found = keyword.match(regex);
   if (found) {
-    let [_, bookName, ch, verse] = found;
-    const fullName = Object.keys(structure).find(b => b.startsWith(bookName));
-    if (fullName) {
-      document.getElementById("bookSelect").value = fullName;
-      await loadChapters(fullName);
+    const [, bookName, ch] = found;
+    const fullBook = Object.keys(abbrMap).find(b => b.startsWith(bookName) || abbrMap[b] === bookName);
+    if (fullBook && structure[fullBook]) {
+      document.getElementById("bookSelect").value = fullBook;
+      await loadChapters(fullBook);
       document.getElementById("chapterSelect").value = ch;
       currentChapter = +ch;
-      await renderBible(fullName, +ch);
-    } else {
-      alert("예: 창세기 1:1 또는 창 1:1");
+      await renderBible(fullBook, currentChapter);
+      return;
     }
-  } else {
-    alert("예: 창세기 1:1 또는 창 1:1");
   }
+  alert("예: 창세기 1:1 또는 창 1:1");
 }
 
 loadBibleMeta();
